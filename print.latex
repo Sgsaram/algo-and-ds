@@ -1,0 +1,745 @@
+\documentclass{article}
+
+\usepackage[russian]{babel}
+
+\usepackage[a4paper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\title{Алгоритмы}
+\author{Гронский И. Ю.}
+
+\begin{document}
+\maketitle
+
+
+\section{Префикс-функция}
+
+\begin{lstlisting}[language=C++]
+vector<int> prefix_function(string &s) {
+    int n = s.size();
+    vector<int> prefix(n, 0);
+    for (int i = 1; i < n; ++i) {
+        int k = prefix[i - 1];
+        while (k > 0 && s[i] != s[k]) {
+            k = prefix[k - 1];
+        }
+        if (s[i] == s[k]) {
+            ++k;
+        }
+        prefix[i] = k;
+    }
+    return prefix;
+}
+\end{lstlisting}
+
+\section{Z-функция}
+
+\begin{lstlisting}[language=C++]
+vector<int> z_function(string &s) {
+    int n = s.size(), l = 0, r = 0;
+    vector<int> z(n, 0);
+    for (int i = 1; i < n; ++i) {
+        if (i <= r) {
+            z[i] = min(r - i + 1, z[i - l]);
+        }
+        while (i + z[i] < n && s[z[i]] == s[i + z[i]]) {
+            ++z[i];
+        }
+        if (i + z[i] - 1 > r) {
+            l = i;
+            r = i + z[i] - 1;
+        }
+    }
+    return z;
+}
+\end{lstlisting}
+
+\newpage
+
+\section{Мосты}
+
+\begin{lstlisting}[language=C++]
+pair<int, int> edge(int a, int b) {
+    if (a > b)
+        swap(a, b);
+    return {a, b};
+}
+
+void find_bridges(int v, int p = -1) {
+    used[v] = true;
+    if (p == -1)
+        deep[v] = 0;
+    else
+        deep[v] = deep[p] + 1;
+    up[v] = deep[v];
+    for (int u : g[v]) {
+        if (u == p)
+            continue;
+        if (!used[u]) {
+            find_bridges(u, v);
+            up[v] = min(up[v], up[u]);
+            if (up[u] > deep[v])
+                bridges.insert(edge(v, u));
+        }
+        else
+            up[v] = min(up[v], deep[u]);
+    }
+}
+\end{lstlisting}
+
+\section{Дейкстра за квадрат}
+
+\begin{lstlisting}[language=C++]
+vector<int> dijkstra(int s) {
+    vector<int> d(n, inf), a(n, 0);
+    d[s] = 0;
+    for (int i = 0; i < n; i++) {
+        int v = -1;
+        for (int u = 0; u < n; u++)
+            if (!a[u] && (v == -1 || d[u] < d[v]))
+                v = u;
+        a[v] = true;
+        for (auto [u, w] : g[v])
+            d[u] = min(d[u], d[v] + w);
+    }
+    return d;
+}
+
+\end{lstlisting}
+
+\section{Мо}
+
+\begin{lstlisting}[language=C++]
+struct Req {
+    int l, r, id;
+
+    bool operator <(Req b) const {
+        if (l / len != b.l / len)
+            return l < b.l;
+        return r < b.r;
+    }
+};
+\end{lstlisting}
+
+\section{Дейкстра за лог}
+
+\begin{lstlisting}[language=C++]
+
+void dijkstra(
+    int s,
+    const vector<vector<pair<int, int>>> &g, 
+    vector<int> &d,
+    vector<int> &p
+) {
+    int n = (int)d.size(), v;
+    d.assign(n, INF);
+    d[s] = 0;
+    set<pair<int, int>> q;
+    q.insert({d[s], s});
+    while (!q.empty()) {
+        v = q.begin()->second;
+        q.erase(q.begin());
+        for (auto [u, w] : g[v]) {
+            if (d[v] + w < d[u]) {
+                q.erase({d[u], u});
+                d[u] = d[v] + w;
+                p[u] = v;
+                q.insert({d[u], u});
+            }
+        }
+    }
+}
+\end{lstlisting}
+
+\section{DSU}
+
+\begin{lstlisting}[language=C++]
+
+vector<int> p, cnt;
+
+void make_dsu(int n) {
+    p.resize(n);
+    cnt.resize(n);
+    for (int i = 0; i < n; i++)
+        p[i] = i;
+}
+
+int dsu_get(int v) {
+    if (p[v] == v)
+        return v;
+    return p[v] = dsu_get(p[v]);
+}
+
+void dsu_union(int a, int b) {
+    a = dsu_get(a);
+    b = dsu_get(b);
+    if (a == b)
+        return;
+    if (cnt[a] < cnt[b])
+        swap(a, b);
+    p[b] = a;
+    if (cnt[a] == cnt[b])
+        cnt[a]++;
+}
+\end{lstlisting}
+\newpage
+\section{Расш. Евклид}
+
+
+\begin{lstlisting}[language=C++]
+long long gcdex(long long a, long long b, long long &x, long long &y) {
+    if (b == 0) {
+        x = 1;
+        y = 0;
+        return a;
+    }
+    long long xp, yp, d = gcdex(b, a % b, xp, yp);
+    x = yp;
+    y = xp - (a / b) * yp;
+    return d;
+}
+
+inline long long divide(long long a, long long b) {
+    long long g, x, _y;
+    g = gcdex(b, MOD, x, _y);
+    x = (x % MOD + MOD) % MOD;
+    return (a * x) % MOD;
+}
+\end{lstlisting}
+
+\section{Решето Эратосфена}
+
+\begin{lstlisting}[language=C++]
+vector<bool> is_prime(N + 1, true);
+for (int i = 2; i * i <= N; i++) {
+    if (is_prime[i])
+        for (int j = i * i; j <= N; j += i)
+            is_prime[j] = false;
+}
+\end{lstlisting}
+
+\section{LCA}
+
+\begin{lstlisting}[language=C++]
+void dfs(int v) {
+    for (int i = 1; i < k; i++)
+        up[v][i] = up[up[v][i - 1]][i - 1];
+    tin[v] = t++;
+    used[v] = true;
+    for (int u : g[v])
+        if (!used[u]) {
+            up[u][0] = v;
+            dfs(u);
+        }
+    tout[v] = t++;
+}
+bool anc(int v, int u) {
+    return tin[v] <= tin[u] && tout[u] <= tout[v];
+}
+int lca(int v, int u) {
+    if (anc(v, u))
+        return v;
+    if (anc(u, v))
+        return u;
+    for (int i = k - 1; i >= 0; i--)
+        if (!anc(up[v][i], u))
+            v = up[v][i];
+    return up[v][0];
+}
+\end{lstlisting}
+
+\section{Конденсация}
+
+\begin{lstlisting}[language=C++]
+void topSort(int v) {
+    used[v] = true;
+    for (int u : g[v])
+        if (!used[u])
+            topSort(u);
+    ord.push_back(v);
+}
+
+void dfs(int v, int c) {
+    comp[v] = c;
+    for (int u : gr[v])
+        if (comp[u] == -1)
+            dfs(u, c);
+}
+
+int main() {
+    for (int i = 0; i < n; i++)
+        if (!used[i])
+            topSort(i);
+    reverse(ord.begin(), ord.end());
+    int c = 0;
+    for (int i : ord)
+        if (comp[i] == -1)
+            dfs(i, c++);
+
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < g[i].size(); j++)
+            if (comp[i] != comp[g[i][j]])
+                s.insert({comp[i], comp[g[i][j]]});
+}
+\end{lstlisting}
+
+\section{Флойд}
+
+\begin{lstlisting}[language=C++]
+for (int i = 0; i < n; i++)
+    for (int v = 0; v < n; v++)
+        for (int u = 0; u < n; u++)
+            if (d[v][i] + d[i][u] < d[v][u]) {
+                d[v][u] = d[v][i] + d[i][u];
+                next[v][u] = next[v][i];
+            }
+           	
+void get_path(int v, int u) {
+    if (d[v][u] == INF) {
+        cout << "No path\n";
+        return;
+    }
+    int c = v;
+    while (c != u) {
+        cout << c << " ";
+        c = next[c][u];
+    }
+    cout << u << "\n";
+}
+\end{lstlisting}
+
+\newpage
+\section{Дерамида (по явному ключу)}
+
+\begin{lstlisting}[language=C++]
+mt19937 rnd(179);
+
+struct Node {
+    int x, y, s;
+    Node *l, *r;
+
+    Node(int x) : x(x) {
+        y = rnd();
+        s = x;
+        l = r = nullptr;
+    }
+};
+
+int sum_v(Node *v) {
+    return v == nullptr ? 0 : v->s;
+}
+
+void update(Node *v) {
+    if (v == nullptr)
+        return;
+    v->s = sum_v(v->l) + sum_v(v->r) + v->x;
+}
+
+pair<Node *, Node *> split(Node *t, int k) {
+    if (t == nullptr) {
+        return {nullptr, nullptr};
+    } else if (t->x <= k) {
+        auto [left, right] = split(t->r, k);
+        t->r = left;
+        update(t);
+        return {t, right};
+    } else {
+        auto [left, right] = split(t->l, k);
+        t->l = right;
+        update(t);
+        return {left, t};
+    }
+}
+
+Node *merge(Node *t1, Node *t2) {
+    if (t1 == nullptr) {
+        return t2;
+    } else if (t2 == nullptr) {
+        return t1;
+    } else if (t1->y > t2->y) {
+        t1->r = merge(t1->r, t2);
+        update(t1);
+        return t1;
+    } else {
+        t2->l = merge(t1, t2->l);
+        update(t2);
+        return t2;
+    }
+}
+\end{lstlisting}
+\newpage
+\begin{lstlisting}[language=C++]
+bool count(Node *t, int k) {
+    if (t == nullptr) {
+        return false;
+    } else if (t->x == k) {
+        return true;
+    } else if (t->x > k) {
+        return count(t->l, k);
+    } else {
+        return count(t->r, k);
+    }
+}
+
+Node *add(Node *t, int k) {
+    if (count(t, k))
+        return t;
+    Node *v = new Node(k);
+    auto [left, right] = split(t, k);
+    return merge(merge(left, v), right);
+}
+
+int get_sum(Node *t, int l, int r) {
+    auto [left, t_mid] = split(t, l - 1);
+    auto [mid, right] = split(t_mid, r);
+    int res = sum_v(mid);
+    merge(left, merge(mid, right));
+    return res;
+}
+\end{lstlisting}
+
+\section{Дерамида (по неявному ключу)}
+
+\begin{lstlisting}[language=C++]
+mt19937 rnd(179);
+
+struct Node {
+    int x, y, cnt, min_val;
+    bool rev;
+    Node *l, *r;
+
+    Node(int x) : x(x) {
+        y = rnd();
+        cnt = 1;
+        rev = false;
+        min_val = x;
+        l = r = nullptr;
+    }
+
+    ~Node() {
+        delete l;
+        delete r;
+    }
+};
+
+int get_cnt(Node *v) {
+    if (!v)
+        return 0;
+    return v->cnt;
+}
+
+\end{lstlisting}
+\newpage
+\begin{lstlisting}[language=C++]
+
+int get_min_val(Node *v) {
+    if (!v)
+        return INF;
+    return v->min_val;
+}
+
+void update(Node *v) {
+    if (v) {
+        v->cnt = get_cnt(v->l) + get_cnt(v->r) + 1;
+        v->min_val = min(min(get_min_val(v->l), get_min_val(v->r)), v->x);
+    }
+}
+void push(Node *v) {
+    if (v && v->rev) {
+        swap(v->l, v->r);
+        v->rev = false;
+        if (v->l)
+            v->l->rev ^= 1;
+        if (v->r)
+            v->r->rev ^= 1;
+    }
+}
+
+pair<Node *, Node *> split(Node *t, int k) {
+    if (t == nullptr)
+        return {nullptr, nullptr};
+    push(t);
+    int c = 0;
+    if (t->l)
+        c = t->l->cnt;
+    if (c <= k) {
+        auto [left, right] = split(t->r, k - c - 1);
+        t->r = left;
+        update(t);
+        return {t, right};
+    } else {
+        auto [left, right] = split(t->l, k);
+        t->l = right;
+        update(t);
+        return {left, t};
+    }
+}
+
+Node *merge(Node *t1, Node *t2) {
+    if (t1 == nullptr) {
+        return t2;
+    } else if (t2 == nullptr) {
+        return t1;
+    } else if (t1->y > t2->y) {
+        push(t1);
+        t1->r = merge(t1->r, t2);
+        update(t1);
+        return t1;
+    } else {
+        push(t2);
+        t2->l = merge(t1, t2->l);
+        update(t2);
+        return t2;
+    }
+}
+
+Node *add(Node *t, int k, int val) {
+    Node *v = new Node(val);
+    auto [left, right] = split(t, k);
+    return merge(merge(left, v), right);
+}
+
+void reverse(Node *t, int l, int r) {
+    auto [left, t_mid] = split(t, l - 1);
+    auto [mid, right] = split(t_mid, r - l);
+    mid->rev ^= 1;
+    merge(left, merge(mid, right));
+}
+
+int get_min(Node *t, int l, int r) {
+    auto [left, t_mid] = split(t, l - 1);
+    auto [mid, right] = split(t_mid, r - l);
+    int res = mid->min_val;
+    merge(left, merge(mid, right));
+    return res;
+}
+\end{lstlisting}
+
+\section{Алгоритм Куна}
+
+\begin{lstlisting}[language=C++]
+vector<vector<int>> g;
+vector<bool> used;
+vector<int> mt;
+
+bool kuhn(int v) {
+    if (used[v])
+        return false;
+    used[v] = true;
+    for (int u : g[v]) {
+        if (mt[u] == -1 || kuhn(mt[u])) {
+            mt[u] = v;
+            return true;
+        }
+    }
+    return false;
+}
+
+for (int i = 0; i < n; i++) {
+        used.assign(n, false);
+        if (kuhn(i))
+            res++;
+    }
+
+\end{lstlisting}
+
+\section{Минимальное вершинное покрытие}
+
+Запустим обход в глубину из всех вершин левой доли, не включенных в $M$.
+$$L^- \cup R^+$$
+
+\newpage
+
+\section{Тернарный поиск ($f$ убывает, потом возрастает)}
+
+\begin{lstlisting}[language=C++]
+for (int it = 0; it < 400; it++) {
+        m1 = (2 * l + r) / 3;
+        m2 = (l + 2 * r) / 3;
+        if (func(m1) < func(m2))
+            r = m2;
+        else
+            l = m1;
+    }
+\end{lstlisting}
+
+\section{Hashes}
+
+\begin{lstlisting}[language=C++]
+class Hasher {
+private:
+    int n;
+    string s;
+    vector<int> p, pref_hash;
+public:
+    Hasher(const string &s) : n((int)s.size()), s(s) {
+        p.resize(n + 1);
+        pref_hash.resize(n + 1);
+        p[0] = 1;
+        for (int i = 1; i <= n; i++)
+            p[i] = (p[i - 1] * K) % MOD;
+        for (int i = 1; i <= n; i++)
+            pref_hash[i] = (pref_hash[i - 1] * K + s[i - 1] - 'a' + 1) % MOD;
+    }
+
+    int get_hash(int l, int r) {
+        return ((pref_hash[r] - pref_hash[l] * p[r - l]) % MOD + MOD) % MOD;
+    }
+};
+
+\end{lstlisting}
+
+\section{Prime factorization}
+
+\begin{lstlisting}[language=C++]
+int i = 2;
+    while (i * i <= n) {
+        if (n % i == 0) {
+            cout << i << " ";
+            n /= i;
+        } else
+            i++;
+    }
+    cout << n << "\n";
+\end{lstlisting}
+
+\section{File writing}
+
+\begin{lstlisting}[language=C++]
+#include <fstream>
+
+ofstream fout;
+fout.open("output.txt");
+if (fout.is_open()) {
+    /* Do something */
+}
+fout.close(); 
+\end{lstlisting}
+
+\section{Точки сочленения}
+
+\begin{lstlisting}[language=C++]
+void findJuncs(int v, int p = -1) {
+    int child = 0;
+    used[v] = true;
+    if (p == -1)
+        deep[v] = 0;
+    else
+        deep[v] = deep[p] + 1;
+    up[v] = deep[v];
+    for (int u : g[v]) {
+        if (u == p)
+            continue;
+        if (!used[u]) {
+            findJuncs(u, v);
+            up[v] = min(up[v], up[u]);
+            if (deep[v] <= up[u] && p != -1)
+                juncs.insert(v + 1);
+            child++;
+        }
+        else
+            up[v] = min(up[v], deep[u]);
+    }
+    if (p == -1 && child > 1)
+        juncs.insert(v + 1);
+}
+
+\end{lstlisting}
+
+\section{Sparse table}
+
+\begin{lstlisting}[language=C++]
+int get_min(int l, int r) { // [l, r)
+    int k = __lg(r - l);
+    return min(table[k][l], table[k][r - (1 << k)]);
+}
+
+
+k = __lg(n) + 1;
+table.resize(k, vector<int>(n));
+for (int i = 0; i < n; i++)
+    table[0][i] = a[i];
+for (int i = 1; i < k; i++)
+    for (int j = 0; j + (1 << i) <= n; j++)
+        table[i][j] = min(table[i - 1][j], table[i - 1][j + (1 << (i - 1))]);
+\end{lstlisting}
+
+\section{Эйлеров цикл (если граф ориентированный, обратное ребро удалять не надо)}
+
+\begin{lstlisting}[language=C++]
+void euler(int v) {
+    while (!g[v].empty()) {
+        u = *g[v].begin();
+        g[v].erase(u);
+        g[u].erase(v);
+        euler(u);
+    }
+    cout << v <<  " ";
+}
+\end{lstlisting}
+
+\section{Корневая}
+
+\begin{lstlisting}[language=C++]
+vector<int> a, b;
+int len;
+
+int sum(int l, int r) {
+    int cl = l / len, cr = r / len, res = 0;
+    if (cl == cr)
+        for (int i = l; i <= r; i++)
+            res += a[i];
+    else {
+        for (int i = l; i < (cl + 1) * len; i++)
+            res += a[i];
+        for (int i = cl + 1; i < cr; i++)
+            res += b[i];
+        for (int i = cr * len; i <= r; i++)
+            res += a[i];
+    }
+    return res;
+}
+\end{lstlisting}
+
+\section{Отжиг}
+
+\begin{lstlisting}[language=C++]
+const int MAX_EPOCH = 1e5 + 7;
+const double DELTA_TEMP = 0.9999;
+
+mt19937 rnd(179);
+
+double norm_rnd() {
+    return (double) rnd() / mt19937::max();
+}
+
+int rand_int(int left, int right) {
+    return left + (rnd() % (right - left + 1));
+}
+
+signed main() {
+    double temp = 1;
+    for (int epoch = 0; epoch < MAX_EPOCH; epoch++) {
+        temp *= DELTA_TEMP;
+
+        /* Do something */
+        
+        cur_val = func()
+        if (cur_val > best_val
+            || exp((cur_val - best_val) / temp) > norm_rnd()) {
+            best_val = cur_val;
+        } else {
+        
+            /* Do something */
+            
+        }
+    }
+}
+\end{lstlisting}
+
+\end{document}
